@@ -49,6 +49,8 @@ zip -r glove.840B.300d.zip file
 #Synonyms
 
 cp -r ../data/counterfitted_neighbors.json ./
+
+cd ..
 ```
 
 ## Train Model
