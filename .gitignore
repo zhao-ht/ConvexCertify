@@ -1,0 +1,11 @@
+backup_checkpoint/
+bert-base-uncased/
+checkpoints/
+nohup.out
+data_set/
+temp/
+__pycache__/
+.idea/
+data/__pycache__/
+useful_things.md
+run.sh

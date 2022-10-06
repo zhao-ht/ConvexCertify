@@ -1,0 +1,14 @@
+numpy
+scipy
+sklearn==0.0
+spacy
+statsmodels
+tensorflow
+torch
+tqdm
+transformers
+jsonlines
+datasets
+apex
+panda
+OpenAttack
