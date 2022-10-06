@@ -6,8 +6,9 @@
 
 This is the code of our work [Certified Robustness Against Natural Language Attacks by Causal Intervention](https://proceedings.mlr.press/v162/zhao22g/zhao22g.pdf) published on ICML 2022.
 
-![Alt](pipeline.png =100x)
-
+<div align=center>
+<img src="https://github.com/zhao-ht/ConvexCertify/blob/master/pipeline.png" width="600px">
+</div>
 
 
 To reproduce our experiments, please first install conda environment and download datasets.
