@@ -6,6 +6,10 @@
 
 This is the code of our work [Certified Robustness Against Natural Language Attacks by Causal Intervention](https://proceedings.mlr.press/v162/zhao22g/zhao22g.pdf) published on ICML 2022.
 
+![Alt](pipeline.png =100x)
+
+
+
 To reproduce our experiments, please first install conda environment and download datasets.
 
 
