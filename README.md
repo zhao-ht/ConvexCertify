@@ -8,8 +8,6 @@ This is the code of our work [Certified Robustness Against Natural Language Atta
 
 ![Alt](pipeline.png =100x)
 
-
-
 To reproduce our experiments, please first install conda environment and download datasets.
 
 
