@@ -541,3 +541,4 @@ def save_epoch(model,optimizer,args,gather,step,loss_best):
                 save_model(load_dict_bert, args.save_path)
                 gather.write('model saved')
     gather.write('loss_best: ' + str(loss_best))
+    return loss_best

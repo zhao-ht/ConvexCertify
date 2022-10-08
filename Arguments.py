@@ -148,6 +148,7 @@ parser.add_argument('--use_cpu',action='store_true')
 parser.add_argument('--device', nargs='+',type=int,default=[0] , help = 'device to train on') #
 parser.add_argument('--save_path', type=str,default='tem', help='') #
 parser.add_argument('--save_frequency',type=int,default=1)
+parser.add_argument('--load_path', type=str, default=None,help='')
 parser.add_argument('--parallel',  action='store_true')
 parser.add_argument('--local_rank',type=int, default=-1)
 parser.add_argument('--synonyms_from_file', action='store_true')

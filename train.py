@@ -1,37 +1,8 @@
-# import argparse
-# import numpy as np
-# import torch as t
-# from torch.optim import Adam
-# import torch.nn.functional as F
-# from utils.batchloader import BatchLoader
-# from utils.parameters import Parameters
-# from model.vae import VAE
-# from torch.autograd import Variable
-import os
-# os.environ["CUDA_VISIBLE_DEVICES"] = "7"
-import sys
-import torch
-#sys.path.append("..")
-from Arguments import parser
-from data import make_synthesized_data
-from model import BaseModel
-from tqdm import tqdm
-from utils import ModifiedBertTokenizer
-from utils import DiscreteChoiceTensor
-from model.certify_vae import Certify_VAE
-from aux_function import DataGather,DataParallel,correct_rate_func
-import os
-import pickle
-import json
-import numpy as np
-# import nltk
-# nltk.download('punkt')
+
 import torch.distributed as dist
-# from apex.parallel import DistributedDataParallel as DDP
-# from apex import amp
-from data import make_synthesized_data, make_attack_data
+
 from torch.utils.data import (DataLoader, RandomSampler)
-from torch.utils.data.distributed import DistributedSampler
+
 from pipeline import *
 
 
@@ -180,7 +151,7 @@ if __name__ == "__main__":
 
 ################# saveing model
         if args.local_rank in [-1, 0]:
-            save_epoch(model, optimizer, args, gather, step, loss_best)
+            loss_best=save_epoch(model, optimizer, args, gather, step, loss_best)
 
         if args.certify_model or args.sentence_level_certify_model:
             args, gather, count, epoch=certify_epoch(model, certify_loader, args, gather, device, epoch)
