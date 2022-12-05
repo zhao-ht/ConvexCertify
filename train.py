@@ -10,6 +10,12 @@ from pipeline import *
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+
+
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()
 
@@ -94,7 +100,8 @@ if __name__ == "__main__":
     model = Certify_VAE(args).to(device[0])
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    scheduler = get_scheduler(args,optimizer)
+
     step=0
     gather=DataGather(['loss','loss_CLS','accu','loss_info','NLL1','NLL2',
                        'KL_loss','KL_weight','Ibp_loss','radius','radius_loss','coef',

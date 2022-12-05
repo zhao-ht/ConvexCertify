@@ -63,6 +63,32 @@ def load_model(model_dic,tb_step,load_path,local_rank=-1,device=0):
             tb_step=checkpoint[key]
     return tb_step
 
+def get_scheduler(args,optimizer):
+    if args.scheduler == 'ReduceLROnPlateau':
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    elif args.scheduler == 'MultiStepLR':
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=args.milestones, gamma=args.MultiStepLR_coef)
+    else:
+        raise ValueError('Scheduler not prepared')
+    return scheduler
+
+def get_loss_ratio(args,value):
+    if args.use_loss_ratio:
+        if args.loss_ratio_method=='adver':
+            print('ratio: ',value, args.loss_ratio_para,value>args.loss_ratio_para)
+            return value>args.loss_ratio_para
+        elif args.loss_ratio_method=='inverse':
+            return value/args.loss_ratio_para
+        else: raise ValueError("loss_ratio_method not supported")
+
+    else:
+        return 1.0
+
+def update_step(args,model,step):
+    if args.use_loss_ratio and model.loss_ratio==0:
+        return step
+    else:
+        return step+1
 
 def train_epoch(model,optimizer,scheduler,train_loader,dev_loader,args,gather,device,step,count,epoch):
     gather.write('train' + '-' * 28)
@@ -77,7 +103,7 @@ def train_epoch(model,optimizer,scheduler,train_loader,dev_loader,args,gather,de
         gene = train
     for batch in gene:
         model.train()
-        step = step + 1
+        step=update_step(args,model,step)
         for item in batch:
             batch[item] = batch[item].to(device[0])
         model.zero_grad()
@@ -94,7 +120,7 @@ def train_epoch(model,optimizer,scheduler,train_loader,dev_loader,args,gather,de
             loss_cls.mean(), accu.mean(), loss_info.mean(), NLL_loss1.mean(), \
             NLL_loss2.mean(), KL_loss.mean(), ibp_loss.mean(), radius.mean(), radius_loss.mean(), loss_clas_hidden.mean(), cr_hidden.mean()
         KL_weight = model.coef_function(args.IBP_fashion, step, args.IBP_max_coef, args.IBP_max_step,
-                                        args.IBP_start_step)
+                                        args.IBP_start_step,args.use_loss_ratio)
 
         if KL_weight == 0:
             loss = loss_cls + args.generator_coef * (NLL_loss1 + NLL_loss2 + loss_info)
@@ -112,14 +138,14 @@ def train_epoch(model,optimizer,scheduler,train_loader,dev_loader,args,gather,de
                         {"params": model.base_model.parameters(), "lr": args.learning_rate}
                     ]
                     optimizer = torch.optim.Adam(params)
-                    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+                    scheduler = get_scheduler(args,optimizer)
                     gather.write('warming up start, lr: ' + str(optimizer.param_groups[0]['lr']))
                 if step <= args.warm_up_step:
                     loss = loss_clas_hidden
                 if step == args.warm_up_step:
                     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
                     gather.write('warming up end, lr: ' + str(optimizer.param_groups[0]['lr']))
-                    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+                    scheduler = get_scheduler(args,optimizer)
                     args.classify_on_hidden = False
             else:
                 raise ValueError("warm up method wrong")
@@ -139,10 +165,11 @@ def train_epoch(model,optimizer,scheduler,train_loader,dev_loader,args,gather,de
     gather.report('train ' + str(epoch) + ': ')
 
     tem = gather.get_report()
+    model.loss_ratio=get_loss_ratio(args,tem[2])
     if args.not_use_scheduler:
         pass
     else:
-        scheduler.step(tem[0])
+        scheduler.step()
     gather.write('lr: ' + str(scheduler.optimizer.param_groups[-1]['lr']))
     tem = gather.get_report()
 
@@ -209,7 +236,7 @@ def adver_train_epoch(model,optimizer,train_loader,dev_loader,args,gather,device
                     loss_cls.mean(), accu.mean(), loss_info.mean(), NLL_loss1.mean(), \
                     NLL_loss2.mean(), KL_loss.mean(), ibp_loss.mean(), radius.mean(), radius_loss.mean(), loss_clas_hidden.mean(), cr_hidden.mean()
                 KL_weight = model.coef_function(args.IBP_fashion, step, args.IBP_max_coef, args.IBP_max_step,
-                                                args.IBP_start_step)
+                                                args.IBP_start_step,args.use_loss_ratio)
 
                 if KL_weight == 0:
                     loss = loss_cls + args.generator_coef * (NLL_loss1 + NLL_loss2 + loss_info)
@@ -278,7 +305,7 @@ def adver_train_epoch(model,optimizer,train_loader,dev_loader,args,gather,device
                 loss_cls.mean(), accu.mean(), loss_info.mean(), NLL_loss1.mean(), \
                 NLL_loss2.mean(), KL_loss.mean(), ibp_loss.mean(), radius.mean(), radius_loss.mean(), loss_clas_hidden.mean(), cr_hidden.mean()
             KL_weight = model.coef_function(args.IBP_fashion, step, args.IBP_max_coef, args.IBP_max_step,
-                                            args.IBP_start_step)
+                                            args.IBP_start_step,args.use_loss_ratio)
 
             if KL_weight == 0:
                 loss = loss_cls + args.generator_coef * (NLL_loss1 + NLL_loss2 + loss_info)
@@ -330,7 +357,7 @@ def verify_epoch(model,optimizer,train_loader,dev_loader,args,gather,device,step
                 loss_cls.mean(), accu.mean(), loss_info.mean(), NLL_loss1.mean(), \
                 NLL_loss2.mean(), KL_loss.mean(), ibp_loss.mean(), radius.mean(), radius_loss.mean(), loss_clas_hidden.mean(), cr_hidden.mean()
             KL_weight = model.coef_function(args.IBP_fashion, step, args.IBP_max_coef, args.IBP_max_step,
-                                            args.IBP_start_step)
+                                            args.IBP_start_step,args.use_loss_ratio)
 
             if KL_weight == 0:
                 loss = loss_cls + args.generator_coef * (NLL_loss1 + NLL_loss2 + loss_info)
@@ -394,7 +421,7 @@ def test_epoch(model,optimizer,train_loader,test_loader,args,gather,device,step,
                 loss_cls.mean(), accu.mean(), loss_info.mean(), NLL_loss1.mean(), \
                 NLL_loss2.mean(), KL_loss.mean(), ibp_loss.mean(), radius.mean(), radius_loss.mean(), loss_clas_hidden.mean(), cr_hidden.mean()
             KL_weight = model.coef_function(args.IBP_fashion, step, args.IBP_max_coef, args.IBP_max_step,
-                                            args.IBP_start_step)
+                                            args.IBP_start_step,args.use_loss_ratio)
 
             if KL_weight == 0:
                 loss = loss_cls + args.generator_coef * (NLL_loss1 + NLL_loss2 + loss_info)

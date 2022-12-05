@@ -25,7 +25,7 @@ parser.add_argument("--dataset_name",
 
 parser.add_argument('--work_path', type=str, default='./', help='')
 
-
+parser.add_argument('--seed',type=int,default=111)
 
 parser.add_argument('--imdb_synonyms_file_path',
                     type=str,
@@ -161,18 +161,29 @@ parser.add_argument('--learning_rate_2', type=float, default=1e-2, help = 'learn
 parser.add_argument('--warm_up_step',type=int,default=100)
 parser.add_argument('--warm_up_method',type=str,default='train_vae_only') # ['classify_on_hidden','train_vae_only']
 
+parser.add_argument('--scheduler',type=str,default='MultiStepLR')
+parser.add_argument('--MultiStepLR_coef',type=float,default=0.2)
+parser.add_argument('--milestones',nargs='+',type=int,default=[300])
+
+parser.add_argument('--use_loss_ratio',action='store_true')
+parser.add_argument('--init_loss_ratio',type=float,default=1.0)
+parser.add_argument('--loss_ratio_method',type=str,default='adver')
+parser.add_argument('--loss_ratio_para',type=float,default=83)
+
+
+
 # coef fashion
 parser.add_argument('--loss_type', type=str, default='bound')
 parser.add_argument('--radius_margin',type=float, default=1.0)
 parser.add_argument('--soft_upper_bound', type = float, default=0.99)
 
 parser.add_argument('--IBP_fashion',type=str,default='linear')
-parser.add_argument('--IBP_start_step',type=float,default=1000)
-parser.add_argument('--IBP_max_step',type=float,default=1000)
-parser.add_argument('--IBP_max_coef',type=float,default=0.01)
+parser.add_argument('--IBP_start_step',type=int,default=1000)
+parser.add_argument('--IBP_max_step',nargs='+',type=float,default=1000)
+parser.add_argument('--IBP_max_coef',nargs='+',type=float,default=0.01)
 parser.add_argument('--Generator_fashion',type=str,default='linear')
-parser.add_argument('--Generator_max_step',type=float,default=1)
-parser.add_argument('--Generator_max_coef',type=float,default=1)
+parser.add_argument('--Generator_max_step',nargs='+',type=int,default=[1])
+parser.add_argument('--Generator_max_coef',nargs='+',type=float,default=[1])
 
 
 

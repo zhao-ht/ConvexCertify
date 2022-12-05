@@ -17,7 +17,7 @@ def grl_hook(coeff):
     def fun1(grad):
         return coeff*grad.clone()
     return fun1
-
+from scipy.interpolate import interp1d
 class Certify_VAE(BaseModel):
 
     def __init__(self, args):
@@ -49,14 +49,28 @@ class Certify_VAE(BaseModel):
                                    args.embedding_dim, weight, args)
         self.NLL = torch.nn.CrossEntropyLoss(reduction='none')
         self.STD=args.std
+        self.loss_ratio=args.init_loss_ratio
 
-    def coef_function(self,anneal_function, step, k, x0,start=0):
+    def coef_function(self,anneal_function, step, k, x0,start=0,use_loss_ratio=False):
         if anneal_function == 'logistic':
-            return float(1 / (1 + np.exp(-k * (step - x0))))
+            res= float(1 / (1 + np.exp(-k[0] * (step - x0[0]))))
         elif anneal_function == 'linear':
-            return k*min(1, max((step-start),0) / x0)
+            res= k[0]*min(1, max((step-start),0) / x0[0])
         elif anneal_function == 'zero':
-            return 0.0
+            res= 0.0
+        elif anneal_function == 'multistep_linear':
+            if not hasattr(self,'inter_f'):
+                assert x0[0]==0
+                self.inter_f= interp1d(x0, k, kind='linear')
+            if step < x0[-1]:
+                res= float(self.inter_f(step))
+            else:
+                res= k[-1]
+        else:
+            raise ValueError('anneal_function not supported yet')
+        if use_loss_ratio:
+            res=res*self.loss_ratio
+        return res
 
     def reparameterize(self,mu,sigma):
         z=torch.randn(mu.shape).to(mu.device)
